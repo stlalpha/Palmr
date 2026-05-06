@@ -29,7 +29,7 @@ function update_script() {
   check_container_resources
   if [[ ! -d /opt/palmr ]]; then
     msg_error "No ${APP} Installation Found!"
-    exit
+    exit 1
   fi
   msg_info "Pulling latest ${APP} image"
   cd /opt/palmr
