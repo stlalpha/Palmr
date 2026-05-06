@@ -1,37 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+
+import { proxyFetch } from "@/lib/proxy-fetch";
 
 export const dynamic = "force-dynamic";
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3333";
-
 export async function POST(req: NextRequest, { params }: { params: Promise<{ alias: string }> }) {
-  const { searchParams } = new URL(req.url);
-  const password = searchParams.get("password");
-  const body = await req.text();
   const { alias } = await params;
-
-  let url = `${API_BASE_URL}/reverse-shares/alias/${alias}/register-file`;
-  if (password) {
-    url += `?password=${encodeURIComponent(password)}`;
-  }
-
-  const apiRes = await fetch(url, {
+  const queryString = req.nextUrl.searchParams.toString();
+  return proxyFetch({
+    req,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body,
-    redirect: "manual",
+    path: `/reverse-shares/alias/${alias}/register-file${queryString ? `?${queryString}` : ""}`,
+    body: await req.text(),
   });
-
-  const resBody = await apiRes.text();
-
-  const res = new NextResponse(resBody, {
-    status: apiRes.status,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  return res;
 }

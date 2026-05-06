@@ -1,36 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3333";
+import { proxyFetch } from "@/lib/proxy-fetch";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await req.text();
-  const cookieHeader = req.headers.get("cookie");
-  const url = `${API_BASE_URL}/files/${id}/move`;
-
-  const apiRes = await fetch(url, {
+  return proxyFetch({
+    req,
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      cookie: cookieHeader || "",
-    },
+    path: `/files/${id}/move`,
     body,
-    redirect: "manual",
   });
-
-  const resBody = await apiRes.text();
-
-  const res = new NextResponse(resBody, {
-    status: apiRes.status,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  const setCookie = apiRes.headers.getSetCookie?.() || [];
-  if (setCookie.length > 0) {
-    res.headers.set("Set-Cookie", setCookie.join(","));
-  }
-
-  return res;
 }

@@ -1,29 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3333";
+import { proxyFetch } from "@/lib/proxy-fetch";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const body = await req.text();
   const { id } = await params;
-  const url = `${API_BASE_URL}/reverse-shares/${id}/check-password`;
-
-  const apiRes = await fetch(url, {
+  const body = await req.text();
+  return proxyFetch({
+    req,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    path: `/reverse-shares/${id}/check-password`,
     body,
-    redirect: "manual",
   });
-
-  const resBody = await apiRes.text();
-
-  const res = new NextResponse(resBody, {
-    status: apiRes.status,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  return res;
 }
