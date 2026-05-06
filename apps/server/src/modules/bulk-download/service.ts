@@ -9,6 +9,36 @@ interface ZipEntry {
   pathInZip: string;
 }
 
+/**
+ * Two loose files in different folders can share a name (the unique constraint
+ * is per-folder). They'd collide as the same path in the archive root and
+ * archiver's behaviour for duplicate names is undefined. Disambiguate with the
+ * same `name (N).ext` convention used by generateUniqueFileName so the resulting
+ * archive is consistent with how the rest of the app handles name collisions.
+ */
+function makeDeduper() {
+  const seen = new Set<string>();
+  return (path: string): string => {
+    if (!seen.has(path)) {
+      seen.add(path);
+      return path;
+    }
+    const lastSlash = path.lastIndexOf("/");
+    const lastDot = path.lastIndexOf(".");
+    const hasExtension = lastDot > lastSlash;
+    const stem = hasExtension ? path.slice(0, lastDot) : path;
+    const ext = hasExtension ? path.slice(lastDot) : "";
+    let counter = 1;
+    let candidate = `${stem} (${counter})${ext}`;
+    while (seen.has(candidate)) {
+      counter++;
+      candidate = `${stem} (${counter})${ext}`;
+    }
+    seen.add(candidate);
+    return candidate;
+  };
+}
+
 export class BulkDownloadService {
   constructor(private readonly fileService: FileService = new FileService()) {}
 
@@ -42,14 +72,17 @@ export class BulkDownloadService {
       throw new Error(`Folder not found or access denied: ${missingFolderIds.join(", ")}`);
     }
 
+    const dedupe = makeDeduper();
     const entries: ZipEntry[] = ownedFiles.map((file) => ({
       objectName: file.objectName,
-      pathInZip: file.name,
+      pathInZip: dedupe(file.name),
     }));
 
     for (const folder of ownedFolders) {
       const folderEntries = await this.collectFolderFiles(folder.id, folder.name);
-      entries.push(...folderEntries);
+      for (const entry of folderEntries) {
+        entries.push({ objectName: entry.objectName, pathInZip: dedupe(entry.pathInZip) });
+      }
     }
 
     const archive = archiver("zip", { store: true });

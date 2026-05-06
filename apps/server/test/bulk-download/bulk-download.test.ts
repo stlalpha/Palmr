@@ -31,6 +31,33 @@ function bodyAsBuffer(res: { rawPayload?: Buffer; payload: string | Buffer }): B
   return Buffer.isBuffer(res.payload) ? res.payload : Buffer.from(res.payload);
 }
 
+/**
+ * Minimal ZIP entry name extractor. Walks local-file-header signatures
+ * (0x504b0304) and reads the name out of each. Avoids adding a ZIP-parsing
+ * dependency just for tests; we only need entry names for assertions.
+ */
+function listZipEntryNames(buffer: Buffer): string[] {
+  const names: string[] = [];
+  let offset = 0;
+  while (offset <= buffer.length - 30) {
+    if (
+      buffer[offset] === 0x50 &&
+      buffer[offset + 1] === 0x4b &&
+      buffer[offset + 2] === 0x03 &&
+      buffer[offset + 3] === 0x04
+    ) {
+      const nameLength = buffer.readUInt16LE(offset + 26);
+      const extraLength = buffer.readUInt16LE(offset + 28);
+      const name = buffer.subarray(offset + 30, offset + 30 + nameLength).toString("utf8");
+      names.push(name);
+      offset += 30 + nameLength + extraLength;
+    } else {
+      offset++;
+    }
+  }
+  return names;
+}
+
 describe("POST /bulk-download", () => {
   let app: FastifyInstance;
 
@@ -190,6 +217,37 @@ describe("POST /bulk-download", () => {
     expect(spy).toHaveBeenCalledWith(looseFile.objectName);
     expect(spy).toHaveBeenCalledWith(rootFile.objectName);
     expect(spy).toHaveBeenCalledWith(subFile.objectName);
+  });
+
+  it("disambiguates same-name files from different folders so archive entries are unique", async () => {
+    stubGetObjectStream();
+    const owner = await createUser();
+    // Three files all named "report.pdf" — DB allows this because the unique
+    // constraint is per-folder. They'd collide at the archive root without dedupe.
+    const folderA = await createFolder(owner.id, { name: "alpha" });
+    const folderB = await createFolder(owner.id, { name: "beta" });
+    const looseDup = await createFile(owner.id, { name: "report.pdf", extension: "pdf" });
+    const inA = await createFile(owner.id, { name: "report.pdf", extension: "pdf", folderId: folderA.id });
+    const inB = await createFile(owner.id, { name: "report.pdf", extension: "pdf", folderId: folderB.id });
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/bulk-download",
+      headers: authHeader(app, owner.id),
+      payload: {
+        fileIds: [looseDup.id, inA.id, inB.id],
+        folderIds: [],
+        zipName: "collide",
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const names = listZipEntryNames(bodyAsBuffer(res));
+    expect(names).toHaveLength(3);
+    // First wins, subsequent get "(N)" suffix in the project's existing convention.
+    expect(names).toEqual(["report.pdf", "report (1).pdf", "report (2).pdf"]);
+    // All names are distinct.
+    expect(new Set(names).size).toBe(names.length);
   });
 
   it("does not open any S3 streams when ownership validation fails", async () => {
