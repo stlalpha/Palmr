@@ -1,30 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+
+import { proxyFetch } from "@/lib/proxy-fetch";
 
 export async function GET(req: NextRequest) {
-  const cookieHeader = req.headers.get("cookie");
-  const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3333";
-  const url = `${API_BASE_URL}/auth/me`;
-
-  const apiRes = await fetch(url, {
+  return proxyFetch({
+    req,
     method: "GET",
-    headers: {
-      cookie: cookieHeader || "",
-    },
-    redirect: "manual",
+    path: `/auth/me`,
   });
-
-  const resBody = await apiRes.text();
-  const res = new NextResponse(resBody, {
-    status: apiRes.status,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  const setCookie = apiRes.headers.getSetCookie?.() || [];
-  if (setCookie.length > 0) {
-    res.headers.set("Set-Cookie", setCookie.join(","));
-  }
-
-  return res;
 }
