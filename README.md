@@ -18,7 +18,7 @@
   </div>
 </div>
 
-🔗 **For detailed documentation visit:** [Palmr. - Documentation](https://palmr.kyantech.com.br)
+🔗 **For detailed documentation, see the `apps/docs` site in this repo (run `pnpm dev` in `apps/docs`).**
 
 ## 📌 Why Choose Palmr.?
 
@@ -126,29 +126,25 @@
 </table>
 
 
-## 👨‍💻 Core Maintainers
+## 👨‍💻 Maintainer
 
-| [**Daniel Luiz Alves**](https://github.com/danielalves96) |
-|------------------|
-| <img src="https://github.com/danielalves96.png" width="150px" alt="Daniel Luiz Alves" /> |
+[**Jim McBride**](https://github.com/stlalpha) — `stlalpha/Palmr` is the canonical home of Palmr.
 
-</br>
+### Original author
 
-## 🤝 Supporters
-
-[<img src="https://i.ibb.co/nMN40STL/Repoflow.png" width="200px" alt="Daniel Luiz Alves" />](https://www.repoflow.io/)
+Palmr was originally created by [Daniel Luiz Alves](https://github.com/danielalves96) at `kyantech/Palmr`. That repo is now archived; this fork has diverged and is independently maintained. Apache-2.0 attribution preserved.
 
 ## ⭐ Star History
 
-  <a href="https://www.star-history.com/#kyantech/Palmr&Date">
+  <a href="https://www.star-history.com/#stlalpha/Palmr&Date">
    <picture>
-     <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=kyantech/Palmr&type=Date&theme=dark" />
-     <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=kyantech/Palmr&type=Date" />
-     <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=kyantech/Palmr&type=Date" />
+     <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=stlalpha/Palmr&type=Date&theme=dark" />
+     <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=stlalpha/Palmr&type=Date" />
+     <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=stlalpha/Palmr&type=Date" />
    </picture>
   </a>
 
 ## 🛠️ Contributing
 
-For contribution guidelines, please refer to the [CONTRIBUTING.md](CONTRIBUTING.md) file.
+This is a small, actively-maintained project. Issues and pull requests are welcome — see the [issue tracker](https://github.com/stlalpha/Palmr/issues).
 
