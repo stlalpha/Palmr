@@ -1,10 +1,11 @@
-.PHONY: help build start clean logs stop restart update-version
+.PHONY: help build build-local start clean logs stop restart update-version
 
 # Default target
 help:
 	@echo "🚀 Palmr - Available Commands:"
 	@echo ""
-	@echo "  make build         - Build Docker image with multi-platform support"
+	@echo "  make build         - Multi-platform Docker build + push (requires IMAGE_NAME=foo/bar)"
+	@echo "  make build-local   - Local single-platform Docker build, no push (for verification/dev)"
 	@echo "  make update-version - Update version in all package.json files"
 	@echo "  make start         - Start the application using docker-compose"
 	@echo "  make stop          - Stop all running containers"
@@ -14,15 +15,18 @@ help:
 	@echo ""
 	@echo "📁 Scripts location: ./infra/"
 
-# Build Docker image using the build script
+# Build Docker image for release: multi-platform + push.
+# Requires IMAGE_NAME env var, e.g. `make build IMAGE_NAME=stlalpha/palmr`.
 build:
-	@echo "🏗️  Building Palmr Docker image..."
-	@echo "📝 This will update version numbers in all package.json files before building"
-	@echo ""
-	@chmod +x ./infra/update-versions.sh
+	@echo "🏗️  Building Palmr Docker image (release: multi-platform + push)..."
 	@chmod +x ./infra/build-docker.sh
-	@echo "🔄 Starting build process..."
 	@./infra/build-docker.sh
+
+# Local build for verification: current platform, no push.
+build-local:
+	@echo "🏗️  Building Palmr Docker image (local: single platform, no push)..."
+	@chmod +x ./infra/build-docker.sh
+	@LOCAL=1 ./infra/build-docker.sh
 
 # Update version in all package.json files
 update-version:
