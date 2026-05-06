@@ -35,7 +35,10 @@ msg_ok "Installed Docker"
 msg_info "Configuring Palmr stack"
 PALMR_DIR="/opt/palmr"
 mkdir -p "$PALMR_DIR"
-cd "$PALMR_DIR"
+cd "$PALMR_DIR" || {
+  msg_error "Failed to enter $PALMR_DIR"
+  exit 1
+}
 
 # The bundled storage exposes its S3 API on port 9379. Presigned URLs returned
 # to clients use STORAGE_URL — must be reachable from wherever the user opens

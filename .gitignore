@@ -36,3 +36,6 @@ data/
 node_modules/
 screenshots/
 .code-graph/
+
+# Local dev artifacts
+scout.json
