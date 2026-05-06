@@ -24,7 +24,7 @@ export async function createUser(
 
 export async function createFile(
   userId: string,
-  overrides: Partial<{ name: string; extension: string; size: bigint }> = {}
+  overrides: Partial<{ name: string; extension: string; size: bigint; folderId: string }> = {}
 ) {
   fileCounter++;
   return prisma.file.create({
@@ -34,6 +34,20 @@ export async function createFile(
       size: overrides.size ?? BigInt(1024),
       objectName: `obj-${fileCounter}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       userId,
+      folderId: overrides.folderId,
+    },
+  });
+}
+
+let folderCounter = 0;
+export async function createFolder(userId: string, overrides: Partial<{ name: string; parentId: string }> = {}) {
+  folderCounter++;
+  return prisma.folder.create({
+    data: {
+      name: overrides.name ?? `folder-${folderCounter}`,
+      objectName: `folder-obj-${folderCounter}-${Date.now()}`,
+      userId,
+      parentId: overrides.parentId,
     },
   });
 }
