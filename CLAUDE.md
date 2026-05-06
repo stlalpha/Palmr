@@ -68,10 +68,16 @@ Reference locale is `apps/web/messages/en-US.json`. Untranslated values are mark
 ### Docker / release
 
 ```bash
-make build              # Build multi-platform Docker image (runs infra/build-docker.sh)
-make update-version     # Bump version in all package.json (runs infra/update-versions.sh)
+make build IMAGE_NAME=stlalpha/palmr   # Multi-platform release build + push to that registry
+make build-local                       # Local single-platform build, no push (verification/dev)
+make update-version                    # Bump version in all package.json
 make start | stop | logs | clean | shell   # docker-compose lifecycle
 ```
+
+`infra/build-docker.sh` accepts these env vars:
+- `IMAGE_NAME` — required for push builds (no default, fails fast)
+- `LOCAL=1` — single-platform build to local Docker, no `--push`
+- `NO_CACHE=0` — allow Docker layer cache (defaults to `--no-cache` for releases)
 
 ## Architecture
 
