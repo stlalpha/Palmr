@@ -504,7 +504,6 @@ export class ReverseShareController {
         message: "Multipart upload initialized",
       });
     } catch (error: any) {
-      console.error("[Multipart] Create multipart upload error:", error);
       if (error.message === "Reverse share not found") {
         return reply.status(404).send({ error: error.message });
       }
@@ -517,6 +516,7 @@ export class ReverseShareController {
       if (error.message === "Password required" || error.message === "Invalid password") {
         return reply.status(401).send({ error: error.message });
       }
+      request.log.error({ err: error }, "[Multipart] unexpected create error");
       return reply.status(500).send({ error: "Failed to create multipart upload" });
     }
   }
@@ -549,7 +549,6 @@ export class ReverseShareController {
       );
       return reply.status(200).send({ url: result.url });
     } catch (error: any) {
-      console.error("[Multipart] Get part URL error:", error);
       if (error.message === "Reverse share not found") {
         return reply.status(404).send({ error: error.message });
       }
@@ -562,6 +561,7 @@ export class ReverseShareController {
       if (error.message === "Password required" || error.message === "Invalid password") {
         return reply.status(401).send({ error: error.message });
       }
+      request.log.error({ err: error }, "[Multipart] unexpected part-url error");
       return reply.status(500).send({ error: "Failed to get presigned URL for part" });
     }
   }
@@ -589,7 +589,6 @@ export class ReverseShareController {
       );
       return reply.status(200).send(result);
     } catch (error: any) {
-      console.error("[Multipart] Complete multipart upload error:", error);
       if (error.message === "Reverse share not found") {
         return reply.status(404).send({ error: error.message });
       }
@@ -602,6 +601,7 @@ export class ReverseShareController {
       if (error.message === "Password required" || error.message === "Invalid password") {
         return reply.status(401).send({ error: error.message });
       }
+      request.log.error({ err: error }, "[Multipart] unexpected complete error");
       return reply.status(500).send({ error: "Failed to complete multipart upload" });
     }
   }
@@ -622,7 +622,6 @@ export class ReverseShareController {
       const result = await this.reverseShareService.abortMultipartUploadByAlias(alias, uploadId, objectName, password);
       return reply.status(200).send(result);
     } catch (error: any) {
-      console.error("[Multipart] Abort multipart upload error:", error);
       if (error.message === "Reverse share not found") {
         return reply.status(404).send({ error: error.message });
       }
@@ -635,6 +634,7 @@ export class ReverseShareController {
       if (error.message === "Password required" || error.message === "Invalid password") {
         return reply.status(401).send({ error: error.message });
       }
+      request.log.error({ err: error }, "[Multipart] unexpected abort error");
       return reply.status(500).send({ error: "Failed to abort multipart upload" });
     }
   }
