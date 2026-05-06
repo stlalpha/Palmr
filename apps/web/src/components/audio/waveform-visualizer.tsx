@@ -5,31 +5,25 @@ import { Slider } from "@/components/ui/slider";
 interface WaveformVisualizerProps {
   progress: number;
   onSeek: (value: number[]) => void;
-  audioData?: Float32Array | null;
+  /**
+   * Bar heights as percentages 0-100. Sourced from a live AnalyserNode while
+   * audio is playing. `null` means we have no live data yet (pre-playback or
+   * paused before any playback) — render a flat baseline rather than fake data.
+   */
+  barHeights?: number[] | null;
+  /** Stable target bar count so the layout doesn't reflow when data arrives. */
+  barCount: number;
   isLoading?: boolean;
 }
 
-const WaveformVisualizer = ({ progress, onSeek, audioData, isLoading = false }: WaveformVisualizerProps) => {
+const BASELINE_HEIGHT_PERCENT = 8;
+
+const WaveformVisualizer = ({ progress, onSeek, barHeights, barCount, isLoading = false }: WaveformVisualizerProps) => {
   const t = useTranslations();
 
-  const generateMockWaveform = () => {
-    return Array.from({ length: 200 }, (_, i) => {
-      const baseHeight = Math.sin(i * 0.1) * 30 + 40;
-      const variation = Math.sin(i * 0.3) * 20;
-      return baseHeight + variation;
-    });
-  };
-
-  const generateRealWaveform = () => {
-    if (!audioData) return generateMockWaveform();
-
-    return Array.from(audioData, (value) => {
-      const normalizedHeight = Math.max(15, value * 100 + 20);
-      return normalizedHeight;
-    });
-  };
-
-  const waveformData = audioData ? generateRealWaveform() : generateMockWaveform();
+  // No live data yet → uniform low baseline. Honest placeholder; not pseudo-data.
+  const heights: number[] =
+    barHeights && barHeights.length > 0 ? barHeights : Array.from({ length: barCount }, () => BASELINE_HEIGHT_PERCENT);
 
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -54,12 +48,12 @@ const WaveformVisualizer = ({ progress, onSeek, audioData, isLoading = false }: 
         className="hidden sm:flex items-end justify-center h-24 gap-[2px] cursor-pointer rounded-md"
         onClick={handleClick}
       >
-        {waveformData.map((height, index) => {
-          const isActive = (index / waveformData.length) * 100 <= progress;
+        {heights.map((height, index) => {
+          const isActive = (index / heights.length) * 100 <= progress;
           return (
             <div
               key={index}
-              className={`w-[2px] rounded-sm transition-all duration-150 ${
+              className={`w-[2px] rounded-sm transition-all duration-100 ${
                 isActive ? "bg-primary" : "bg-muted-foreground/20"
               }`}
               style={{

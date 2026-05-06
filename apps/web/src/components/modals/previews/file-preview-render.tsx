@@ -10,7 +10,6 @@ interface FilePreviewRendererProps {
   fileType: FileType;
   fileName: string;
   previewUrl: string | null;
-  videoBlob: string | null;
   textContent: string | null;
   isLoading: boolean;
   pdfAsBlob: boolean;
@@ -24,7 +23,6 @@ export function FilePreviewRenderer({
   fileType,
   fileName,
   previewUrl,
-  videoBlob,
   textContent,
   isLoading,
   pdfAsBlob,
@@ -37,17 +35,11 @@ export function FilePreviewRenderer({
     return <DefaultPreview fileName={fileName} isLoading />;
   }
 
-  const mediaUrl = fileType === "video" ? videoBlob : previewUrl;
-
-  if (!mediaUrl && (fileType === "video" || fileType === "audio")) {
-    return <DefaultPreview fileName={fileName} />;
-  }
-
   if (fileType === "text" && !textContent) {
     return <DefaultPreview fileName={fileName} />;
   }
 
-  if (!previewUrl && fileType !== "video" && fileType !== "text") {
+  if (!previewUrl && fileType !== "text") {
     return <DefaultPreview fileName={fileName} />;
   }
 
@@ -70,10 +62,10 @@ export function FilePreviewRenderer({
       return <ImagePreview src={previewUrl!} alt={fileName} description={description} onDownload={onDownload} />;
 
     case "audio":
-      return <AudioPreview src={mediaUrl!} />;
+      return <AudioPreview src={previewUrl!} />;
 
     case "video":
-      return <VideoPreview src={mediaUrl!} />;
+      return <VideoPreview src={previewUrl!} />;
 
     default:
       return <DefaultPreview fileName={fileName} />;

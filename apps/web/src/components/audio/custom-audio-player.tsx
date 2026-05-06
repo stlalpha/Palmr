@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IconPlayerPause, IconPlayerPlay, IconVolume, IconVolume3, IconVolumeOff } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -10,98 +10,146 @@ interface CustomAudioPlayerProps {
   src: string;
 }
 
+const TARGET_BARS = 200;
+const ANALYSER_FFT_SIZE = 512; // → 256 frequency bins
+const TICK_INTERVAL_MS = 50; // 20fps; cheap enough for 200-element React reconciliation
+
 export function CustomAudioPlayer({ src }: CustomAudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(1);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [audioData, setAudioData] = useState<Float32Array | null>(null);
+  const [analyserData, setAnalyserData] = useState<Uint8Array | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
   const audioRef = useRef<HTMLAudioElement>(null);
   const previousVolume = useRef(1);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const loadAudioData = useCallback(async () => {
-    try {
-      const response = await fetch(src);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  const setupAudioGraph = useCallback(() => {
+    if (audioContextRef.current || !audioRef.current) return;
 
-      const channelData = audioBuffer.getChannelData(0);
-      const points = 200;
-      const blockSize = Math.floor(channelData.length / points);
-      const downsampledData = new Float32Array(points);
+    const Ctx =
+      window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    const source = ctx.createMediaElementSource(audioRef.current);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = ANALYSER_FFT_SIZE;
+    source.connect(analyser);
+    analyser.connect(ctx.destination);
 
-      for (let i = 0; i < points; i++) {
-        const blockStart = blockSize * i;
-        let sum = 0;
-        for (let j = 0; j < blockSize; j++) {
-          sum += Math.abs(channelData[blockStart + j]);
-        }
-        downsampledData[i] = sum / blockSize;
-      }
+    audioContextRef.current = ctx;
+    sourceRef.current = source;
+    analyserRef.current = analyser;
+  }, []);
 
-      setAudioData(downsampledData);
-    } catch (error) {
-      console.error("Failed to load audio data:", error);
-      setAudioData(null);
+  const startTicking = useCallback(() => {
+    if (tickRef.current !== null) return;
+    tickRef.current = setInterval(() => {
+      const analyser = analyserRef.current;
+      if (!analyser) return;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(data);
+      setAnalyserData(data);
+    }, TICK_INTERVAL_MS);
+  }, []);
+
+  const stopTicking = useCallback(() => {
+    if (tickRef.current !== null) {
+      clearInterval(tickRef.current);
+      tickRef.current = null;
     }
-  }, [src]);
-
-  useEffect(() => {
-    loadAudioData();
-  }, [src, loadAudioData]);
+  }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const updateProgress = () => {
-      const currentProgress = (audio.currentTime / audio.duration) * 100;
-      setProgress(currentProgress);
+      if (!audio.duration) return;
+      setProgress((audio.currentTime / audio.duration) * 100);
       setCurrentTime(audio.currentTime);
     };
-
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
       setIsLoading(false);
     };
+    const handlePlay = () => {
+      setIsPlaying(true);
+      setupAudioGraph();
+      // AudioContext may be suspended by autoplay policy until a user gesture.
+      const ctx = audioContextRef.current;
+      if (ctx?.state === "suspended") {
+        void ctx.resume();
+      }
+      startTicking();
+    };
+    const handlePauseOrEnd = () => {
+      setIsPlaying(false);
+      stopTicking();
+    };
 
     audio.addEventListener("timeupdate", updateProgress);
-    audio.addEventListener("ended", () => setIsPlaying(false));
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePauseOrEnd);
+    audio.addEventListener("ended", handlePauseOrEnd);
 
     return () => {
       audio.removeEventListener("timeupdate", updateProgress);
-      audio.removeEventListener("ended", () => setIsPlaying(false));
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePauseOrEnd);
+      audio.removeEventListener("ended", handlePauseOrEnd);
     };
-  }, []);
+  }, [setupAudioGraph, startTicking, stopTicking]);
+
+  useEffect(() => {
+    const ctxRef = audioContextRef;
+    return () => {
+      stopTicking();
+      void ctxRef.current?.close();
+      ctxRef.current = null;
+      sourceRef.current = null;
+      analyserRef.current = null;
+    };
+  }, [stopTicking]);
+
+  // Convert live frequency analyser bytes into a fixed bar-height array.
+  // Sampling stride keeps the visualizer's element count constant regardless of FFT size.
+  const barHeights = useMemo<number[] | null>(() => {
+    if (!analyserData || analyserData.length === 0) return null;
+    const stride = Math.max(1, Math.floor(analyserData.length / TARGET_BARS));
+    const heights: number[] = [];
+    for (let i = 0; i < analyserData.length && heights.length < TARGET_BARS; i += stride) {
+      heights.push(Math.max(8, (analyserData[i] / 255) * 100));
+    }
+    return heights;
+  }, [analyserData]);
 
   const togglePlayPause = () => {
-    if (!audioRef.current) return;
-
+    const audio = audioRef.current;
+    if (!audio) return;
     if (isPlaying) {
-      audioRef.current.pause();
+      audio.pause();
     } else {
-      audioRef.current.play();
+      void audio.play();
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleSeek = ([percentage]: number[]) => {
     if (!audioRef.current) return;
-
-    const time = (percentage / 100) * audioRef.current.duration;
-    audioRef.current.currentTime = time;
+    audioRef.current.currentTime = (percentage / 100) * audioRef.current.duration;
     setProgress(percentage);
   };
 
   const handleVolumeChange = (value: number[]) => {
     const newVolume = value[0];
     if (!audioRef.current) return;
-
     audioRef.current.volume = newVolume;
     setVolume(newVolume);
     if (newVolume > 0) {
@@ -111,7 +159,6 @@ export function CustomAudioPlayer({ src }: CustomAudioPlayerProps) {
 
   const toggleMute = () => {
     if (!audioRef.current) return;
-
     if (volume > 0) {
       handleVolumeChange([0]);
     } else {
@@ -123,9 +170,15 @@ export function CustomAudioPlayer({ src }: CustomAudioPlayerProps) {
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      <audio ref={audioRef} src={src} preload="metadata" />
+      <audio ref={audioRef} src={src} preload="metadata" crossOrigin="anonymous" />
 
-      <WaveformVisualizer progress={progress} onSeek={handleSeek} audioData={audioData} isLoading={isLoading} />
+      <WaveformVisualizer
+        progress={progress}
+        onSeek={handleSeek}
+        barHeights={barHeights}
+        barCount={TARGET_BARS}
+        isLoading={isLoading}
+      />
 
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" onClick={togglePlayPause} disabled={isLoading} className="h-8 w-8">
