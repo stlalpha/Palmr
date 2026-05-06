@@ -41,7 +41,15 @@ cd "$PALMR_DIR"
 # to clients use STORAGE_URL — must be reachable from wherever the user opens
 # their browser. We default to the LXC's primary IPv4 so single-host setups
 # work out of the box; reverse-proxy users will want to override after install.
-DETECTED_IP="$(hostname -I | awk '{print $1}')"
+DETECTED_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+if [[ -z "$DETECTED_IP" ]]; then
+  # Fallback: ask the kernel which source address it'd use for outbound traffic.
+  DETECTED_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '/src/ {for (i=1;i<=NF;i++) if ($i=="src") print $(i+1)}')"
+fi
+if [[ -z "$DETECTED_IP" ]]; then
+  msg_info "Could not detect an IPv4 address; defaulting STORAGE_URL to 127.0.0.1 — update /opt/palmr/docker-compose.yml after install"
+  DETECTED_IP="127.0.0.1"
+fi
 
 cat <<EOF >"$PALMR_DIR/docker-compose.yml"
 services:

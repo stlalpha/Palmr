@@ -32,7 +32,10 @@ function update_script() {
     exit 1
   fi
   msg_info "Pulling latest ${APP} image"
-  cd /opt/palmr
+  cd /opt/palmr || {
+    msg_error "Failed to enter /opt/palmr"
+    exit 1
+  }
   $STD docker compose pull
   msg_ok "Pulled latest image"
 
