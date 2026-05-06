@@ -6,6 +6,8 @@ export async function POST(req: NextRequest) {
   return proxyFetch({
     req,
     method: "POST",
-    path: `/invite-tokens`,
+    path: "/invite-tokens",
+    // Original handler sent JSON.stringify({}) — preserve that contract.
+    body: "{}",
   });
 }

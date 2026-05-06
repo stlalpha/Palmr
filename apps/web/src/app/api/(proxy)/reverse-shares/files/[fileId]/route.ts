@@ -17,6 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ file
     req,
     method: "PUT",
     path: `/reverse-shares/files/${fileId}`,
+    body: await req.text(),
   });
 }
 
