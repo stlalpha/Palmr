@@ -7,6 +7,6 @@ export async function GET(req: NextRequest) {
   return proxyFetch({
     req,
     method: "GET",
-    path: `/files/download-url?${queryString}${queryString ? `?${queryString}` : ""}`,
+    path: `/files/download-url${queryString ? `?${queryString}` : ""}`,
   });
 }
