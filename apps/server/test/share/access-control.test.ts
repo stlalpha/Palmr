@@ -290,20 +290,30 @@ describe("DELETE /shares/:id auth", () => {
     await app.close();
   });
 
-  it("rejects requests with no auth header (and does not delete)", async () => {
+  it("returns 401 with no auth header (and does not delete)", async () => {
     const owner = await createUser();
     const file = await createFile(owner.id);
     const share = await createShare(owner.id, { fileIds: [file.id] });
 
     const res = await app.inject({ method: "DELETE", url: `/shares/${share.id}` });
 
-    // FIXME: should be 401. The route has no preValidation, so the controller's
-    // outer try/catch swallows the missing-JWT error into the generic 400 branch.
-    // See controller.ts deleteShare — the JWT failure should be a 401.
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(401);
 
     const stillExists = await prisma.share.findUnique({ where: { id: share.id } });
     expect(stillExists).not.toBeNull();
+  });
+
+  it("returns 404 for an unknown share id", async () => {
+    const owner = await createUser();
+
+    const res = await app.inject({
+      method: "DELETE",
+      url: "/shares/cltestnonexistent",
+      headers: authHeader(app, owner.id),
+    });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error).toBe("Share not found");
   });
 
   it("returns 401 for non-creator", async () => {

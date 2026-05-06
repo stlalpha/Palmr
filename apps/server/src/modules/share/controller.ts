@@ -56,8 +56,8 @@ export class ShareController {
       try {
         await request.jwtVerify();
         userId = (request as any).user?.userId;
-      } catch (err) {
-        console.error(err);
+      } catch {
+        // Anonymous viewer — share access control is enforced in the service layer.
       }
 
       const share = await this.shareService.getShare(shareId, password, userId);
@@ -169,18 +169,13 @@ export class ShareController {
 
   async deleteShare(request: FastifyRequest, reply: FastifyReply) {
     try {
-      await request.jwtVerify();
       const userId = (request as any).user?.userId;
       if (!userId) {
         return reply.status(401).send({ error: "Unauthorized: a valid token is required to access this resource." });
       }
 
       const { id } = request.params as { id: string };
-
       const share = await this.shareService.findShareById(id);
-      if (!share) {
-        return reply.status(404).send({ error: "Share not found" });
-      }
 
       if (share.creatorId !== userId) {
         return reply.status(401).send({ error: "Unauthorized to delete this share" });
@@ -189,6 +184,9 @@ export class ShareController {
       const deleted = await this.shareService.deleteShare(id);
       return reply.send({ share: deleted });
     } catch (error: any) {
+      if (error.message === "Share not found") {
+        return reply.status(404).send({ error: error.message });
+      }
       return reply.status(400).send({ error: error.message });
     }
   }
