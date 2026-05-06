@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-This is a **personal maintenance fork** of `kyantech/Palmr`, which upstream archived. Work happens on `main`. There is no upstream to contribute back to and no other contributors to coordinate with — quality cleanup, refactors, and removing legacy cruft are all on the table. Don't preserve existing patterns just because they're there.
+`stlalpha/Palmr` is the canonical home of Palmr. It started as a fork of `kyantech/Palmr` (which the original author archived) but has diverged enough to be its own project. Sole maintainer is Jim McBride. Work happens on `main`. Quality cleanup, refactors, and removing legacy cruft are all on the table — don't preserve existing patterns just because they're there.
+
+The original author Daniel Luiz Alves is credited per Apache-2.0; don't strip attribution. The `upstream` git remote still exists locally for archaeological reference but isn't a source of truth.
 
 ## Repository Layout
 
@@ -135,7 +137,7 @@ Exposed ports: `3333` (API), `5487` (web), `9379` (MinIO S3), `9378` (MinIO cons
 
 ## Conventions
 
-- **Branch**: work on `main`. The old `next`-branch contributor flow in `CONTRIBUTING.md` and `.github/copilot-instructions.md` is upstream's — ignore it.
+- **Branch**: work on `main`. There is no `next` or other long-running branch.
 - **Commit format**: Conventional Commits (`feat(web): ...`, `fix(api): ...`, `docs: ...`, `chore: ...`).
 - **TypeScript paths**: server uses `@/*` → `src/*` (see `tsconfig.json`); web uses the same convention.
 - **Zod everywhere**: server routes validate via Zod schemas exported from `dto.ts`. Don't bypass — the same schemas drive the OpenAPI spec.
