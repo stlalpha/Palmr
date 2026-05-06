@@ -37,7 +37,11 @@ pnpm type-check        # tsc --noEmit
 pnpm validate          # lint + type-check (this is what the pre-push hook runs)
 ```
 
-There is **no test framework** wired up in any app. `validate` is the only check the project enforces. The Husky `pre-push` hook (`.husky/pre-push`) runs `pnpm validate` in web, then docs, then server, sequentially.
+The Husky `pre-push` hook (`.husky/pre-push`) runs `pnpm validate` in web, then docs, then server, sequentially. `validate` = lint + type-check.
+
+`apps/server` has a vitest suite (`pnpm test`, `pnpm test:watch`). Tests use Fastify's `app.inject()` against a temp SQLite DB seeded by `prisma db push` in `test/setup.ts`. The DB is reset between tests via `test/helpers/db.ts`. `test/helpers/factories.ts` has `createUser`/`createFile`/`createShare`/`authHeader` helpers; `test/helpers/test-app.ts` builds a Fastify instance for testing. Type-checking uses `tsconfig.test.json` (extends the main config, adds `test/**`, sets `rootDir: "."`). Test is **not** part of `validate` yet — must be run separately.
+
+`apps/web` and `apps/docs` have no tests.
 
 ### Server-only
 
