@@ -7,6 +7,7 @@ import { directoriesConfig } from "./config/directories.config";
 import { appRoutes } from "./modules/app/routes";
 import { authProvidersRoutes } from "./modules/auth-providers/routes";
 import { authRoutes } from "./modules/auth/routes";
+import { bulkDownloadRoutes } from "./modules/bulk-download/routes";
 import { fileRoutes } from "./modules/file/routes";
 import { folderRoutes } from "./modules/folder/routes";
 import { healthRoutes } from "./modules/health/routes";
@@ -71,6 +72,7 @@ async function startServer() {
   app.register(fileRoutes);
   app.register(shareRoutes);
   app.register(reverseShareRoutes);
+  app.register(bulkDownloadRoutes);
   app.register(storageRoutes);
   app.register(appRoutes);
   app.register(healthRoutes);
