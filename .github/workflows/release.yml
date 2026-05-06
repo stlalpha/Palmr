@@ -63,12 +63,18 @@ jobs:
           # Override via the repo's Variables setting if you want a different
           # registry (e.g. "stlalpha/palmr" for Docker Hub). Defaults to GHCR.
           OVERRIDE: ${{ vars.RELEASE_REGISTRY }}
+          REPO: ${{ github.repository }}
         run: |
+          # Container registries require lowercase repo names. github.repository
+          # preserves the GitHub case (e.g. "stlalpha/Palmr"), so we have to
+          # normalise.
           if [ -n "$OVERRIDE" ]; then
-            echo "name=$OVERRIDE" >> "$GITHUB_OUTPUT"
+            NAME="$OVERRIDE"
           else
-            echo "name=ghcr.io/${{ github.repository }}" >> "$GITHUB_OUTPUT"
+            NAME="ghcr.io/$REPO"
           fi
+          NAME=$(echo "$NAME" | tr '[:upper:]' '[:lower:]')
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
