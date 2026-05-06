@@ -119,6 +119,7 @@ export async function shareRoutes(app: FastifyInstance) {
   app.delete(
     "/shares/:id",
     {
+      preValidation,
       schema: {
         tags: ["Share"],
         operationId: "deleteShare",
@@ -132,6 +133,8 @@ export async function shareRoutes(app: FastifyInstance) {
             share: ShareResponseSchema,
           }),
           400: z.object({ error: z.string().describe("Error message") }),
+          401: z.object({ error: z.string().describe("Error message") }),
+          404: z.object({ error: z.string().describe("Error message") }),
         },
       },
     },
