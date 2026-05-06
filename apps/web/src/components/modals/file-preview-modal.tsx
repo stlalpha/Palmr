@@ -65,7 +65,6 @@ export function FilePreviewModal({
             fileType={previewState.fileType}
             fileName={file.name}
             previewUrl={previewState.previewUrl}
-            videoBlob={previewState.videoBlob}
             textContent={previewState.textContent}
             isLoading={previewState.isLoading}
             pdfAsBlob={previewState.pdfAsBlob}

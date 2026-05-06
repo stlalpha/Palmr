@@ -4,13 +4,10 @@ import { toast } from "sonner";
 
 import { getCachedDownloadUrl, getCachedReverseShareDownloadUrl } from "@/lib/download-url-cache";
 import { getFileExtension, getFileType, type FileType } from "@/utils/file-types";
-import { getMimeType } from "@/utils/mime-types";
 
 interface FilePreviewState {
   previewUrl: string | null;
-  videoBlob: string | null;
   textContent: string | null;
-  downloadUrl: string | null;
   isLoading: boolean;
   isLoadingPreview: boolean;
   pdfAsBlob: boolean;
@@ -33,9 +30,7 @@ export function useFilePreview({ file, isOpen, isReverseShare = false, sharePass
   const t = useTranslations();
   const [state, setState] = useState<FilePreviewState>({
     previewUrl: null,
-    videoBlob: null,
     textContent: null,
-    downloadUrl: null,
     isLoading: true,
     isLoadingPreview: false,
     pdfAsBlob: false,
@@ -51,9 +46,7 @@ export function useFilePreview({ file, isOpen, isReverseShare = false, sharePass
     setState((prev) => ({
       ...prev,
       previewUrl: null,
-      videoBlob: null,
       textContent: null,
-      downloadUrl: null,
       pdfAsBlob: false,
       pdfLoadFailed: false,
       isLoading: true,
@@ -67,56 +60,9 @@ export function useFilePreview({ file, isOpen, isReverseShare = false, sharePass
       if (prev.previewUrl && prev.previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(prev.previewUrl);
       }
-      if (prev.videoBlob && prev.videoBlob.startsWith("blob:")) {
-        URL.revokeObjectURL(prev.videoBlob);
-      }
       return prev;
     });
   }, []);
-
-  const loadVideoPreview = useCallback(
-    async (url: string) => {
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const blob = await response.blob();
-        // Create a new blob with the correct MIME type based on file extension
-        // This fixes issues when the server returns application/octet-stream
-        const mimeType = getMimeType(file.name);
-        const typedBlob = new Blob([blob], { type: mimeType });
-        const blobUrl = URL.createObjectURL(typedBlob);
-        setState((prev) => ({ ...prev, videoBlob: blobUrl }));
-      } catch {
-        setState((prev) => ({ ...prev, previewUrl: url }));
-      }
-    },
-    [file.name]
-  );
-
-  const loadAudioPreview = useCallback(
-    async (url: string) => {
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const blob = await response.blob();
-        // Create a new blob with the correct MIME type based on file extension
-        // This fixes issues when the server returns application/octet-stream
-        const mimeType = getMimeType(file.name);
-        const typedBlob = new Blob([blob], { type: mimeType });
-        const blobUrl = URL.createObjectURL(typedBlob);
-        setState((prev) => ({ ...prev, previewUrl: blobUrl }));
-      } catch {
-        setState((prev) => ({ ...prev, previewUrl: url }));
-      }
-    },
-    [file.name]
-  );
 
   const handlePdfLoadError = useCallback(() => {
     setState((prev) => {
@@ -125,6 +71,14 @@ export function useFilePreview({ file, isOpen, isReverseShare = false, sharePass
     });
   }, []);
 
+  /**
+   * PDF previews fetch into a blob so the iframe can render with a stable
+   * application/pdf type even on hosts that don't honour ResponseContentType
+   * overrides. Audio and video do NOT do this — they bind the signed URL
+   * directly to <audio>/<video> so the browser can use Range requests and
+   * stream playback. The server is responsible for correct Content-Type
+   * (covered by regression tests on getPresignedGetUrl, see issue #3).
+   */
   const loadPdfPreview = useCallback(
     async (url: string) => {
       try {
@@ -197,21 +151,16 @@ export function useFilePreview({ file, isOpen, isReverseShare = false, sharePass
         url = await getCachedDownloadUrl(file.objectName, options);
       }
 
-      setState((prev) => ({ ...prev, downloadUrl: url }));
-
       switch (fileType) {
-        case "video":
-          await loadVideoPreview(url);
-          break;
-        case "audio":
-          await loadAudioPreview(url);
-          break;
         case "pdf":
           await loadPdfPreview(url);
           break;
         case "text":
           await loadTextPreview(url);
           break;
+        // audio, video, image and the default fall through to direct URL
+        // binding so <audio>/<video>/<img> can stream from S3 with Range
+        // request support.
         default:
           setState((prev) => ({ ...prev, previewUrl: url }));
       }
@@ -225,18 +174,7 @@ export function useFilePreview({ file, isOpen, isReverseShare = false, sharePass
       }));
       loadingRef.current = false;
     }
-  }, [
-    isReverseShare,
-    file.id,
-    file.objectName,
-    fileType,
-    sharePassword,
-    loadVideoPreview,
-    loadAudioPreview,
-    loadPdfPreview,
-    loadTextPreview,
-    t,
-  ]);
+  }, [isReverseShare, file.id, file.objectName, fileType, sharePassword, loadPdfPreview, loadTextPreview, t]);
 
   const handleDownload = useCallback(async () => {
     const fileKey = isReverseShare ? file.id : file.objectName;
