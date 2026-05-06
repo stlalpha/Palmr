@@ -76,3 +76,30 @@ export function authHeader(app: FastifyInstance, userId: string) {
   const token = app.jwt.sign({ userId });
   return { authorization: `Bearer ${token}` };
 }
+
+export async function createReverseShare(
+  creatorId: string,
+  opts: {
+    alias: string;
+    password?: string;
+    expiration?: Date;
+    isActive?: boolean;
+    name?: string;
+    maxFiles?: number;
+  }
+) {
+  const reverseShare = await prisma.reverseShare.create({
+    data: {
+      name: opts.name ?? null,
+      creatorId,
+      password: opts.password ? await bcrypt.hash(opts.password, 4) : null,
+      expiration: opts.expiration ?? null,
+      isActive: opts.isActive ?? true,
+      maxFiles: opts.maxFiles ?? null,
+    },
+  });
+  await prisma.reverseShareAlias.create({
+    data: { alias: opts.alias, reverseShareId: reverseShare.id },
+  });
+  return reverseShare;
+}
