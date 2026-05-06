@@ -81,6 +81,21 @@ make start | stop | logs | clean | shell   # docker-compose lifecycle
 - `LOCAL=1` — single-platform build to local Docker, no `--push`
 - `NO_CACHE=0` — allow Docker layer cache (defaults to `--no-cache` for releases)
 
+### Release flow
+
+Tag-driven via `.github/workflows/release.yml`. Pushing a tag matching `v*` runs validate + tests + multi-platform Docker build + GHCR push + GitHub Release with auto-generated notes.
+
+```bash
+make update-version                    # interactive; bumps web/docs/server/root package.json
+git commit -am "chore: release v3.4.0-beta"
+git tag -a v3.4.0-beta -m "v3.4.0-beta"
+git push origin main v3.4.0-beta       # pushing the tag triggers the release workflow
+```
+
+Image is published to `ghcr.io/stlalpha/palmr:{latest,v3.4.0-beta}` by default. To publish to Docker Hub instead, set the `RELEASE_REGISTRY` repo variable (e.g. `stlalpha/palmr`) and the `DOCKERHUB_USERNAME` + `DOCKERHUB_TOKEN` secrets.
+
+The `ci.yml` workflow runs validate + tests + build on every PR and `main` push.
+
 ## Architecture
 
 ### Server (`apps/server`)
