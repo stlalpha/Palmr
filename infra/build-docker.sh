@@ -39,6 +39,8 @@ fi
 if [ "$LOCAL_BUILD" = "1" ]; then
     echo "🚀 Local build (single platform, no push): $IMAGE_NAME:{latest,$TAG}"
 
+    # set -e at the top of the script will abort on a build failure;
+    # the lines below only execute if buildx succeeded.
     docker buildx build \
         $CACHE_FLAG \
         -t "$IMAGE_NAME:latest" \
@@ -46,14 +48,9 @@ if [ "$LOCAL_BUILD" = "1" ]; then
         --load \
         .
 
-    if [ $? -eq 0 ]; then
-        echo "✅ Local build completed: $IMAGE_NAME:latest, $IMAGE_NAME:$TAG"
-        echo ""
-        echo "Try it: docker run --rm -p 5487:5487 -p 3333:3333 $IMAGE_NAME:$TAG"
-    else
-        echo "❌ Build failed!"
-        exit 1
-    fi
+    echo "✅ Local build completed: $IMAGE_NAME:latest, $IMAGE_NAME:$TAG"
+    echo ""
+    echo "Try it: docker run --rm -p 5487:5487 -p 3333:3333 $IMAGE_NAME:$TAG"
 else
     echo "🚀 Multi-platform build + push: $IMAGE_NAME:{latest,$TAG} (linux/amd64, linux/arm64)"
 
@@ -67,17 +64,12 @@ else
         --push \
         .
 
-    if [ $? -eq 0 ]; then
-        echo "✅ Multi-platform build completed and pushed!"
-        echo ""
-        echo "Built for platforms: linux/amd64, linux/arm64"
-        echo "Pushed tags: $IMAGE_NAME:latest and $IMAGE_NAME:$TAG"
-        echo ""
-        echo "Access points after pulling and running:"
-        echo "- API: http://localhost:3333"
-        echo "- Web App: http://localhost:5487"
-    else
-        echo "❌ Build failed!"
-        exit 1
-    fi
+    echo "✅ Multi-platform build completed and pushed!"
+    echo ""
+    echo "Built for platforms: linux/amd64, linux/arm64"
+    echo "Pushed tags: $IMAGE_NAME:latest and $IMAGE_NAME:$TAG"
+    echo ""
+    echo "Access points after pulling and running:"
+    echo "- API: http://localhost:3333"
+    echo "- Web App: http://localhost:5487"
 fi
