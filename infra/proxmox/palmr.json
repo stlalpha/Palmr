@@ -1,0 +1,48 @@
+{
+  "name": "Palmr",
+  "slug": "palmr",
+  "categories": [
+    11
+  ],
+  "date_created": "2026-05-06",
+  "type": "ct",
+  "updateable": true,
+  "privileged": false,
+  "interface_port": 5487,
+  "documentation": "https://github.com/stlalpha/Palmr",
+  "config_path": "/opt/palmr/docker-compose.yml",
+  "website": "https://github.com/stlalpha/Palmr",
+  "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/webp/palmr.webp",
+  "description": "Palmr is a fast, self-hosted file-sharing platform — a flexible alternative to WeTransfer, SendGB, and Send Anywhere. Runs as a Docker container with bundled MinIO storage; no external dependencies required for default zero-config setup.",
+  "install_methods": [
+    {
+      "type": "default",
+      "script": "ct/palmr.sh",
+      "resources": {
+        "cpu": 2,
+        "ram": 2048,
+        "hdd": 8,
+        "os": "Debian",
+        "version": "13"
+      }
+    }
+  ],
+  "default_credentials": {
+    "username": null,
+    "password": null
+  },
+  "notes": [
+    {
+      "text": "The bundled storage system listens on port 9379 and is referenced by STORAGE_URL in /opt/palmr/docker-compose.yml. STORAGE_URL must be reachable from your browser — install defaults to the LXC's primary IPv4. Override it for a stable hostname or HTTPS reverse-proxy setup.",
+      "type": "info"
+    },
+    {
+      "text": "To put Palmr behind an HTTPS reverse proxy, set SECURE_SITE: \"true\" in /opt/palmr/docker-compose.yml and update STORAGE_URL to your public storage URL.",
+      "type": "info"
+    },
+    {
+      "text": "Update with `cd /opt/palmr && docker compose pull && docker compose up -d` or rerun the installer's update mode.",
+      "type": "info"
+    }
+  ]
+}
